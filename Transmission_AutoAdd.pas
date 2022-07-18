@@ -1,4 +1,4 @@
-﻿uses crt, System.Net, System.IO, System, Transmission.API.RPC, Transmission.API.RPC.Entity;
+﻿uses Inifile, crt, System.Net, System.IO, System, Transmission.API.RPC, Transmission.API.RPC.Entity;
 
 var
   webclient := new WebClient;
@@ -8,9 +8,8 @@ var
 
 var
   key: string;
-
-var
-  torfile: string;
+  
+  var config := new Inifile.TIniFile('config.conf');
 
 begin
   crt.SetWindowCaption('Transmission auto-add');
@@ -19,11 +18,12 @@ begin
   while true do
   begin
     TextColor(LightCyan);
-    cred.Password := '1234';
-    cred.UserName := 'admin';
+    cred.Password := config.ReadString('Credentials', 'pass', '');
+    cred.UserName := config.ReadString('Credentials', 'login', '');
     try
       webclient.Credentials := cred;
-      webclient.DownloadString('http://' + ReadAllLines('config.conf')[0] + '/transmission/rpc');
+      webclient.DownloadString('http://' + config.ReadString('IP', 'IP', '') + '/transmission/rpc');
+      Writeln('Connected to ' + config.ReadString('IP', 'IP', ''));
     except
       on ex: WebException do
       begin
@@ -45,7 +45,7 @@ begin
     if Directory.GetFiles(Environment.GetEnvironmentVariable('userprofile') + '\Downloads', '*.torrent').Length > 0 then
       foreach var ii in df.GetFiles('*.torrent') do
       begin
-        var client := new Transmission.API.RPC.Client('http://192.168.1.34:9091/transmission/rpc', key, 'admin', '1234');
+        var client := new Transmission.API.RPC.Client('http://' + config.ReadString('IP', 'IP', '') + '/transmission/rpc', key, config.ReadString('Credentials', 'login', ''), config.ReadString('Credentials', 'pass', ''));
         var torrent := new NewTorrent;
         torrent.Metainfo := Convert.ToBase64String(Encoding.Default.GetBytes
         (ReadAllText(Environment.GetEnvironmentVariable('userprofile') + '/Downloads/' + ii.Name)));
